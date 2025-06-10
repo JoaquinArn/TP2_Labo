@@ -172,9 +172,6 @@ df = dd.sql(consultaSQL).df()
 #con el pixel1,2,3,4,5,6,7,8,12,13,18,21,22,23,24,25 se puede distinguir a la zapatilla del resto porque es la única prenda que no tiene nada ahí
 #desde el pixel 155 al pixel165, la zapatilla presenta gran diferencia de intensidad
 #en los pixeles 169,170 hay una gran diferencia entre la cartera y el resto 
-
-#%% SCATTERPLOT PROMEDIO SANDALIA
-sns.scatterplot(x = promedio_sandalia.index, y = promedio_sandalia.values)
 #%% BoxPlot para un pixel en especifico y asi observar la distribucion de intensidad por clase
 pixel = 'pixel100'
 
@@ -363,7 +360,7 @@ clases_seleccionadas = fashion[(fashion['label'] == 0) | (fashion['label'] == 8)
 labels = clases_seleccionadas['label']
 pixels = clases_seleccionadas.drop(columns=['label'])
 
-# Por último, adjuntamos una función proporcionada por Manuela Cerdeiro que nos será útil más adelante.
+# Por último, adjuntamos una función proporcionada por Manuela Cerdeiro (modificada levemente para adaptarlo a nuestras necesidades) que nos será útil más adelante.
 
 def plot_decision_boundary_fashion(X, y, clf):
     """
@@ -551,10 +548,13 @@ print(f'Con el pseudo_rango, el f1 score es de = {f1_score(y_test, resultados_ps
 #Cada modelo desarrollado, será evaluado según la métrica 'accuracy_score'
 #Tanto el número de píxeles como k que serán tomados en cuenta serán de 3 a 10.
 #Es por ello que programamos lo siguiente:
-resultados = []
+resultadosMean = []
+resultadosMedian = []
+resultadosIQR = []
+resultadosPseudoRango = []
 
 #Primero vamos iterando sobre la cantidad de atributos que tomamos.    
-for i in range(3, 10, 1):
+for i in range(3, 11, 1):
     #Seleccionamos los i mejores píxeles según cada criterio
     pixs_promedio = mejores_pixeles_por_promedio[:i]
     pixs_mediana = mejores_pixeles_por_mediana[:i]
@@ -570,8 +570,15 @@ for i in range(3, 10, 1):
     X_IQR_test = X_test[pixs_iqr]
     X_pseudorango_train = X_train[pixs_pseudo_rango]
     X_pseudorango_test = X_test[pixs_pseudo_rango]
+    
+    #Inicializamos para cada conjunto de atributos una lista.
+    #En estas se guardará para cierta cantidad de atributos, los distintos valores del accuracy_score según la cantidad de vecinos (de 3 a 10)
+    resultsMean = []
+    resultsMedian = []
+    resultsIQR = []
+    resultsPseudorango = []
 
-    for j in range(3, 10, 1):
+    for j in range(3, 11, 1):
         #Inicializamos y entrenamos los distintos clasificadores
         clfPromedio = KNeighborsClassifier(n_neighbors=j)
         clfPromedio.fit(X_prom_train, y_train)
@@ -590,14 +597,43 @@ for i in range(3, 10, 1):
         
         #Analizamos la performance, colocando los resultados en una lista que pasará a formar parte de la variable 'resultados'
         #Estos resultados los redondeamos a tres cifras.
-        results = []
-        results.append(round(accuracy_score(y_test, results_prom), 3))
-        results.append(round(accuracy_score(y_test, results_median),3))
-        results.append(round(accuracy_score(y_test, results_iqr),3))
-        results.append(round(accuracy_score(y_test, results_pseudorango),3))
-        resultados.append(results)
-        
-#%% CLASIFICACIÓN MULTICLASE - PRIMERA ETAPA: SEPARACIÓN DE CONJUNTOS
+        resultsMean.append(round(accuracy_score(y_test, results_prom), 4))
+        resultsMedian.append(round(accuracy_score(y_test, results_median),4))
+        resultsIQR.append(round(accuracy_score(y_test, results_iqr),4))
+        resultsPseudorango.append(round(accuracy_score(y_test, results_pseudorango),4))
+    
+    resultadosMean.append(resultsMean)
+    resultadosMedian.append(resultsMedian)
+    resultadosIQR.append(resultsIQR)
+    resultadosPseudoRango.append(resultsPseudorango)
+    
+
+#Graficamos la matriz resultado de cada selección de atributos    
+
+# Crear figura y ejes
+def generar_grafico_matriz(matriz, ax):
+    ax.set_xticks(range(8))
+    ax.set_xticklabels(range(3, 11))  # De 3 a 10
+    ax.set_yticks(range(8))
+    ax.set_yticklabels(range(3, 11))
+
+    # Mostrar valores numéricos
+    for i in range(8):
+        for j in range(8):
+            ax.text(j, i, f"{matriz[i, j]:.2f}", ha='center', va='center', fontsize=10)
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
+# Aplicar función a cada gráfico
+generar_grafico_matriz(np.array(resultadosMean), axes[0, 0])
+generar_grafico_matriz(np.array(resultadosMedian), axes[0, 1])
+generar_grafico_matriz(np.array(resultadosIQR), axes[1, 0])
+generar_grafico_matriz(np.array(resultadosPseudoRango), axes[1, 1])
+plt.tight_layout()
+plt.show()
+
+
+
+#%% CLASIFICACIÓN MULTICLASE - PRIMERA ETAPA: SEPARACIÓN DE CONJUNTOS EN DEVELOPMENT & EVALUATION
 
 #En primer lugar, separamos nuestros conjuntos en:
     #el que utiizaremos como desarrollo del modelo
@@ -646,7 +682,7 @@ print(f'recall score = {recall_score(y_eval, evaluacion, average = "macro")}')
 print(f'precision score = {precision_score(y_eval, evaluacion, average = "macro")}')
 print(f'f1 score = {f1_score(y_eval, evaluacion, average = "macro")}')
 
-#%% SELECCIÓN MEJOR ÁRBOL PRIMER FORMA
+#%% CLASIFICACIÓN MULTICLASE - SEGUNDA ETAPA: SELECCIÓN DE MEJOR ÁRBOL PRIMER FORMA
 alturas = [10]
 nsplits = 10
 kf = StratifiedKFold(n_splits=nsplits, shuffle=True, random_state=42)
@@ -672,7 +708,7 @@ for i, (train_index, test_index) in enumerate(kf.split(X_dev, y_dev)):
 
 # Especificar los hiperparámetros a probar
 parametros = {
-    'max_depth': [5,6],  # Profundidad máxima del árbol
+    'max_depth': [10],  # Profundidad máxima del árbol
     'criterion': ['gini', 'entropy'],  # Criterio de división
     'min_samples_leaf': [1]  # Mínimo de muestras en cada hoja
 }
