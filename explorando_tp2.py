@@ -622,9 +622,7 @@ num_vecinos_labels = list(range(3, 11)) # Para el eje X
 
 
 def generar_grafico_matriz(matriz, ax, titulo):
-    # Usamos imshow para crear el mapa de calor
-    # 'origin='lower'' asegura que el punto (0,0) de la matriz se mapee a la esquina inferior izquierda del gráfico.
-    # Esto es útil si tus datos se generan de forma incremental (por ejemplo, 3 atributos, 3 vecinos en la primera celda).
+
     c = ax.imshow(matriz, cmap='viridis', origin='lower')
     plt.colorbar(c, ax=ax) # Añadimos una barra de color para interpretar los valores
 
