@@ -238,6 +238,113 @@ plt.imshow(img, cmap = 'hot')
 plt.colorbar(label ='intensidad')
 plt.show()
 
+#%% IDEA EJERCICIO 1A
+pixel = 'pixel350' 
+clases = [0,1,2,3,4,5,6,7,8,9]
+iqr_por_clase = {}
+for clase in clases:
+    clase_data = fashion[fashion['label'] == clase].drop(columns='label')
+    q1 = clase_data[pixel].quantile(0.25)
+    q3 = clase_data[pixel].quantile(0.75)
+    iqr_por_clase[clase] = q3 - q1
+
+#Barplot
+pd.Series(iqr_por_clase).plot(kind='bar')
+plt.title(f"IQR por clase para el {pixel}")
+plt.xlabel("Clase")
+plt.ylabel("IQR del píxel")
+plt.show()
+
+#%% OTRA IDEA EJERCICIO 1A
+#Medio raro todo junto, podriamos graficarlo en dos partes para q se entienda
+iqr_matriz = []
+clases = [0,1,2,3,4,5,6,7,8,9]
+for clase in clases:
+    clase_data = fashion[fashion['label'] == clase].drop(columns='label')
+    iqr_ = clase_data.quantile(0.75) - clase_data.quantile(0.25)
+    iqr_matriz.append(iqr_.values)
+
+
+iqr_df = pd.DataFrame(iqr_matriz, index=[f'Clase {i}' for i in range(10)])
+
+#Heatmap
+plt.figure(figsize=(15, 5))
+sns.heatmap(iqr_df, cmap='hot', cbar_kws={"label": "IQR"})
+plt.xlabel("Índice de píxel")
+plt.ylabel("Clase")
+plt.title("IQR por píxel y por clase")
+plt.show()
+#%% Diferenciamos clase 2 de 1
+
+img = abs((promedio_pullover[:-1].values.reshape((28,28))) - (promedio_pantalon[:-1].values.reshape((28,28))))
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+
+
+img = ((promedio_pullover[:-1].values.reshape((28,28))) - ( promedio_pantalon[:-1].values.reshape((28,28))))
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+#%% Diferenciamos clase 2 de la 6
+
+img = abs((promedio_pullover[:-1].values.reshape((28,28))) - (promedio_camisa[:-1].values.reshape((28,28))))
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+#%% Diferenciamos clase 0 de la 8
+img = abs((promedio_remera_top[:-1].values.reshape((28,28))) - (promedio_cartera[:-1].values.reshape((28,28))))
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+#%% Diferenciamos clase 0 de la 3
+img = abs((promedio_remera_top[:-1].values.reshape((28,28))) - (promedio_vestido[:-1].values.reshape((28,28))))
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+
+#%% Como varia la clase 8 con IQR
+cartera = fashion[fashion['label'] == 8]
+cartera = cartera.drop(columns = ["label"])
+iqr_por_pixel = {}
+for pixel in cartera.columns:
+    primer_q = cartera[pixel].quantile(0.25)
+    tercer_q = cartera[pixel].quantile(0.75)
+    iqr_por_pixel[pixel] = abs(primer_q - tercer_q)
+df_iqr_cartera = pd.DataFrame([iqr_por_pixel])
+
+img = df_iqr_cartera.iloc[0].values.reshape((28,28)) 
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+#%% Variacion de la clase 8 con 'Pseudo-rango'
+cartera = fashion[fashion['label'] == 8]
+cartera = cartera.drop(columns = ["label"])
+pseudo_por_pixel = {}
+for pixel in cartera.columns:
+    limite_inf_cartera = cartera[pixel].quantile(0.25) - 1.5*iqr(cartera[pixel]) #Calculamos máxima extensión del limite inferior que puede tener el whisker 
+    limite_sup_cartera = cartera[pixel].quantile(0.75) + 1.5*iqr(cartera[pixel]) #Calculamos máxima extensión del limite superior que puede tener el whisker 
+    pseudo_por_pixel[pixel] = abs(limite_sup_cartera - limite_inf_cartera)
+df_pseudo_cartera = pd.DataFrame([pseudo_por_pixel])
+
+img = df_pseudo_cartera.iloc[0].values.reshape((28,28)) 
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+#%% Variacion de Clase 7 con Pseudo
+zapatilla = fashion[fashion['label'] == 7]
+pseudo_por_pixel = {}
+for pixel in cartera.columns:
+    limite_inf_cartera = zapatilla[pixel].quantile(0.25) - 1.5*iqr(zapatilla[pixel]) #Calculamos máxima extensión del limite inferior que puede tener el whisker 
+    limite_sup_cartera = zapatilla[pixel].quantile(0.75) + 1.5*iqr(zapatilla[pixel]) #Calculamos máxima extensión del limite superior que puede tener el whisker 
+    pseudo_por_pixel[pixel] = abs(limite_sup_cartera - limite_inf_cartera)
+df_pseudo_zapatilla = pd.DataFrame([pseudo_por_pixel])
+
+img = df_pseudo_zapatilla.iloc[0].values.reshape((28,28)) 
+plt.imshow(img, cmap = 'hot')
+plt.colorbar(label ='intensidad')
+plt.show()
+
 #%% SEPARACIÓN CLASE O Y 8 PARA CLASIFICACIÓN BINARIA
 
 clases_seleccionadas = fashion[(fashion['label'] == 0) | (fashion['label'] == 8)]
