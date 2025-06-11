@@ -608,29 +608,55 @@ for i in range(3, 11, 1):
     resultadosPseudoRango.append(resultsPseudorango)
     
 
-#Graficamos la matriz resultado de cada selección de atributos    
+#%% graficos 
 
-# Crear figura y ejes
-def generar_grafico_matriz(matriz, ax):
-    ax.set_xticks(range(8))
-    ax.set_xticklabels(range(3, 11))  # De 3 a 10
-    ax.set_yticks(range(8))
-    ax.set_yticklabels(range(3, 11))
+resultados_mean_np = np.array(resultadosMean)
+resultados_median_np = np.array(resultadosMedian)
+resultados_iqr_np = np.array(resultadosIQR)
+resultados_pseudo_rango_np = np.array(resultadosPseudoRango)
 
-    # Mostrar valores numéricos
-    for i in range(8):
-        for j in range(8):
-            ax.text(j, i, f"{matriz[i, j]:.2f}", ha='center', va='center', fontsize=10)
+# Definimos los rangos para las etiquetas de los ejes
+num_atributos_labels = list(range(3, 11)) # Para el eje Y
+num_vecinos_labels = list(range(3, 11)) # Para el eje X
 
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
-# Aplicar función a cada gráfico
-generar_grafico_matriz(np.array(resultadosMean), axes[0, 0])
-generar_grafico_matriz(np.array(resultadosMedian), axes[0, 1])
-generar_grafico_matriz(np.array(resultadosIQR), axes[1, 0])
-generar_grafico_matriz(np.array(resultadosPseudoRango), axes[1, 1])
-plt.tight_layout()
+
+
+def generar_grafico_matriz(matriz, ax, titulo):
+
+    c = ax.imshow(matriz, cmap='viridis', origin='lower')
+    plt.colorbar(c, ax=ax) # Añadimos una barra de color para interpretar los valores
+
+    # Configuramos las etiquetas del eje X (Número de Vecinos)
+    ax.set_xticks(np.arange(len(num_vecinos_labels)))
+    ax.set_xticklabels(num_vecinos_labels)
+    ax.set_xlabel("Número de Vecinos (k)")
+
+    # Configuramos las etiquetas del eje Y (Número de Atributos)
+    ax.set_yticks(np.arange(len(num_atributos_labels)))
+    ax.set_yticklabels(num_atributos_labels)
+    ax.set_ylabel("Número de Atributos")
+
+    ax.set_title(f"Accuracy Score - Selección por {titulo}")
+
+    for i in range(matriz.shape[0]):
+        for j in range(matriz.shape[1]):
+            ax.text(j, i, f"{matriz[i, j]:.2f}", ha='center', va='center', color='white', fontsize=11, weight=900)
+
+#Creamos la figura y los subplots
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 20))
+fig.suptitle('Accuracy score según las medidas de tendencia/disperción utilizadas', fontsize=24)
+
+
+#Llamamos a la función para cada matriz de resultados
+generar_grafico_matriz(resultados_mean_np, axes[0, 0], "Promedio")
+generar_grafico_matriz(resultados_median_np, axes[0, 1], "Mediana")
+generar_grafico_matriz(resultados_iqr_np, axes[1, 0], "IQR")
+generar_grafico_matriz(resultados_pseudo_rango_np, axes[1, 1], "Pseudo-Rango")
+
+fig.text(0.5, 0.02, 'completar', fontsize=10, color='gray', ha='center', va='bottom')
+
+plt.tight_layout(rect=[0, 0.07, 1, 0.94])
 plt.show()
-
 
 
 #%% CLASIFICACIÓN MULTICLASE - PRIMERA ETAPA: SEPARACIÓN DE CONJUNTOS EN DEVELOPMENT & EVALUATION
