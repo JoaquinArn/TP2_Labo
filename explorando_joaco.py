@@ -153,7 +153,7 @@ df = dd.sql(consultaSQL).df()
 #en los pixeles 169,170 hay una gran diferencia entre la cartera y el resto 
 
 #%% BoxPlot para un pixel en especifico y asi observar la distribucion de intensidad por clase
-pixel = 'pixel426'
+pixel = 'pixel143'
 
 # Creo un dataframe que tenga solo la información de ese pixel
 df_de_100 = fashion[['label', pixel]]
@@ -475,7 +475,7 @@ for pixel in pixels.columns:
     tercer_cuart_cartera = cartera[pixel].quantile(0.75)
     if (max(primer_cuart_remera, primer_cuart_cartera) > min(tercer_cuart_remera, tercer_cuart_cartera)):
             #Calculamos la separación entre los rangos
-            diferencia_absoluta = max(abs(primer_cuart_cartera - tercer_cuart_remera) , abs(primer_cuart_remera - tercer_cuart_cartera)) #Calculamos la diferencia
+            diferencia_absoluta = min(abs(primer_cuart_cartera - tercer_cuart_remera) , abs(primer_cuart_remera - tercer_cuart_cartera)) #Calculamos la diferencia
             diferenciasIQR[pixel] = diferencia_absoluta #Guardamos el valor
     
     
@@ -499,7 +499,7 @@ for pixel in pixels.columns:
     #Nos interesa únicamente aquellos atributos cuyos rangos sean disjuntos
     if (max(limite_inf_remera, limite_inf_cartera) > min(limite_sup_remera, limite_sup_cartera)):
             #Calculamos la separación entre los rangos
-            diferencia_absoluta = max(abs(limite_inf_cartera - limite_sup_remera) , abs(limite_inf_remera - limite_sup_cartera)) #Calculamos la diferencia
+            diferencia_absoluta = min(abs(limite_inf_cartera - limite_sup_remera) , abs(limite_inf_remera - limite_sup_cartera)) #Calculamos la diferencia
             diferenciasPseudoRango[pixel] = diferencia_absoluta #Guardamos el valor
 
 
@@ -742,12 +742,65 @@ img = np.array(img).reshape(28,28)
 
 plt.imshow(img, cmap = 'gray')
 plt.show()
+#%% Graficamos barplots de iqr por clase de varios pixeles
+
+def graficar_iqr_por_clase(pixel, ax):
+    pixel = 'pixel' + str(pixel) 
+    clases = [0,1,2,3,4,5,6,7,8,9]
+    iqr_por_clase = {}
+    for clase in clases:
+        clase_data = fashion[fashion['label'] == clase].drop(columns='label')
+        q1 = clase_data[pixel].quantile(0.25)
+        q3 = clase_data[pixel].quantile(0.75)
+        iqr_por_clase[clase] = q3 - q1
+        #print(f'iqr del pixel {pixel} en la clase {clase}: {iqr_por_clase[clase]}')
+
+    #Barplot
+    pd.Series(iqr_por_clase).plot(kind='bar', ax=ax)
+    ax.set_title(f"IQR por clase para el {pixel}")
+    ax.set_xlabel("Clase")
+    ax.set_ylabel("IQR del píxel")
+
+def graficar_varios_iqr(inicio,final):
+
+#Calcula el número total de gráficos en base al rango
+    num_plots = final - inicio + 1
+
+#Preparación para los subgráficos
+    num_cols = 5
+    num_rows = (num_plots + num_cols - 1) // num_cols
+
+#Crea la figura y los subgráficos en una cuadrícula
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 4, num_rows * 3.5))
+    axes = axes.flatten()
+
+#Bucle para generar y dibujar los gráficos
+#El bucle ahora itera sobre el rango de píxeles deseado
+    for i, pixel_num in enumerate(range(inicio, final + 1)):
+        # Llama a la función, pasando el número de píxel actual y el objeto de ejes del subgráfico
+        graficar_iqr_por_clase(pixel_num, axes[i])
+
+#Oculta los subgráficos vacíos si los hay
+    for j in range(num_plots, len(axes)):
+        fig.delaxes(axes[j])
+
+
+    plt.tight_layout()
+    plt.show()
+
+graficar_varios_iqr(0,27) #fila1
+graficar_varios_iqr(28,55) #fila2
+graficar_varios_iqr(348,375) #fila del medio
+graficar_varios_iqr(728,755) #anteultima fila
+graficar_varios_iqr(756,783) #ultima fila
+
 #%%
 #En primer lugar, separamos nuestros conjuntos en:
     #el que utiizaremos como desarrollo del modelo
     #el conjunto hedl-out o de evaluación; que será en el que finalmente presentaremos los resultados (confiabilidad/acertividad) de nuestro modelo.
     
-X = fashion.iloc[:, :-1]  #contiene la información correspondiente a los atributos (pixeles) a evaluar
+X = fashion[[pixel for pixel in fashion.columns if pixel not in atributos_inutiles]]  #contiene la información correspondiente a los atributos (pixeles) a evaluar
+X = X.drop(columns = ['label'])
 y = fashion['label'] #contiene la información correspondiente a las etiquetas (clases) de las prendas.
 
 #División de conjuntos de manera que se mantenga la distribución de clases original 
@@ -880,7 +933,7 @@ parametros = {
     'min_samples_leaf': [1]  # Mínimo de muestras en cada hoja
 }
 
-mejor_arbol = tree.DecisionTreeClassifier(random_state=50)
+mejor_arbol = tree.DecisionTreeClassifier(random_state=42)
 # Configurar GridSearchCV
 grid_search = GridSearchCV(arbol_decision, parametros, cv=5, scoring='accuracy', verbose=1)
 
